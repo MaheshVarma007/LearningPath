@@ -84,7 +84,7 @@ for fruit in fruits:
 for i in range(5):
     print(f"Number: {i}")
 # While loop
-count = 0
+count = 10
 while count < 5:
     count= int(input("Enter a number (or type 5 to stop): "))
     print(f"Count: {count}")
