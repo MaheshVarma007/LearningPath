@@ -1,2 +1,12 @@
 */.env
 venv/
+#Ignore pycache files
+__pycache__/
+#Ignore Python bytecode files
+*.pyc
+#Ignore log files
+*.log
+#Ignore configuration files
+config.ini
+#Ignore virtual environment directories
+venv/
