@@ -1,3 +1,41 @@
+# Docker Setup & Usage
+
+## 1. Prepare your `.env` file
+
+Create a `.env` file in the project root (same directory as the Dockerfile) with the following format (no quotes):
+
+```
+AWS_ACCESS_KEY_ID=your-access-key-id
+AWS_SECRET_ACCESS_KEY=your-secret-access-key
+AWS_DEFAULT_REGION=ap-southeast-1
+```
+
+## 2. Build the Docker image
+
+Run this command in the directory containing the Dockerfile:
+
+```sh
+docker build -t s3_cli_app .
+```
+
+## 3. Run the CLI using Docker
+
+To run the CLI and pass AWS credentials from your `.env` file:
+
+```sh
+docker run --rm --env-file .env s3_cli_app <command>
+```
+
+Replace `<command>` with your desired CLI command, e.g.:
+
+```sh
+docker run --rm --env-file .env s3_cli_app list_buckets
+```
+
+## Notes
+- Ensure your `.env` file does not have quotes around the values.
+- The `.env` file must be in the same directory where you run the `docker run` command, or provide the correct path.
+
 # S3 CLI Application
 
 ## Overview
