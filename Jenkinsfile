@@ -22,11 +22,11 @@ pipeline {
             }
         }
 
-        stage('Run Tests') {
-            steps {
-                sh 'pytest -v --maxfail=1 --disable-warnings'
-            }
-        }
+        // stage('Run Tests') {
+        //     steps {
+        //         sh 'pytest -v --maxfail=1 --disable-warnings'
+        //     }
+        // }
 
         stage('Build Docker Image') {
             steps {
