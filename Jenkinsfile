@@ -58,7 +58,9 @@ pipeline {
 
     post {
         always {
-            cleanWs()
+            script {
+                cleanWs()
+            }
         }
         success {
             echo "Pipeline completed successfully. Docker image: ${IMAGE_TAG}"
