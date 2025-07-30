@@ -10,15 +10,19 @@ pipeline {
     stages {
         stage('Checkout') {
             steps {
+                echo "Starting: Checkout SCM"
                 checkout scm
+                echo "Completed: Checkout SCM"
             }
         }
 
         stage('Install dependencies') {
             steps {
                 dir('aws/Projects/S3_CLI') {
+                    echo "Starting: Install dependencies"
                     sh 'python3 -m pip install --upgrade pip'
                     sh 'pip install -r requirements.txt'
+                    echo "Completed: Install dependencies"
                 }
             }
         }
@@ -26,6 +30,7 @@ pipeline {
         stage('Build Docker Image') {
             steps {
                 dir('aws/Projects/S3_CLI') {
+                    echo "Starting: Build Docker Image"
                     script {
                         def shortCommit = sh(
                             returnStdout: true,
@@ -34,6 +39,7 @@ pipeline {
                         env.IMAGE_TAG = "${DOCKERHUB_USER}/${IMAGE_NAME}:${shortCommit}"
                     }
                     sh 'docker build -t ${IMAGE_TAG} .'
+                    echo "Completed: Build Docker Image"
                 }
             }
         }
@@ -41,10 +47,12 @@ pipeline {
         stage('Push Docker Image') {
             steps {
                 dir('aws/Projects/S3_CLI') {
+                    echo "Starting: Push Docker Image"
                     sh 'echo ${DOCKERHUB_PASS} | docker login -u ${DOCKERHUB_USER} --password-stdin'
                     sh 'docker push ${IMAGE_TAG}'
                     sh 'docker tag ${IMAGE_TAG} ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
                     sh 'docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
+                    echo "Completed: Push Docker Image"
                 }
             }
         }
