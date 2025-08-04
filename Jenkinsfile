@@ -12,7 +12,7 @@ pipeline {
         stage('Pre-check') {
             steps {
                 echo "========== [STAGE: Pre-check] =========="
-                sh 'python3 --version || true'
+                sh 'python --version || true'
                 sh 'pip --version || true'
                 sh 'docker --version || true'
                 sh 'ls -l aws/Projects/S3_CLI || true'
@@ -35,7 +35,7 @@ pipeline {
                 echo "========== [STAGE: Install dependencies] =========="
                 dir('aws/Projects/S3_CLI') {
                     echo "[STEP] Starting: Upgrade pip"
-                    sh 'python3 -m pip install --upgrade pip'
+                    sh 'python -m pip install --upgrade pip'
                     echo "[STEP] Completed: Upgrade pip"
                     echo "[STEP] Starting: Install requirements"
                     sh 'pip install -r requirements.txt'
