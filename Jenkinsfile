@@ -2,10 +2,23 @@ pipeline {
     agent any
 
     environment {
-        DOCKERHUB_USER = credentials('maheshvarma007')
-        DOCKERHUB_PASS = credentials('Manju@123')
+        // Use a Jenkins usernamePassword credential with ID 'dockerhub'
+        DOCKERHUB_USER = credentials('dockerhub', variable: 'USERNAME')
+        DOCKERHUB_PASS = credentials('dockerhub', variable: 'PASSWORD')
         IMAGE_NAME = 's3_cli_app'
     }
+    // Optional: Add a pre-check stage to verify tool versions and workspace
+    stages {
+        stage('Pre-check') {
+            steps {
+                echo "========== [STAGE: Pre-check] =========="
+                sh 'python3 --version || true'
+                sh 'pip --version || true'
+                sh 'docker --version || true'
+                sh 'ls -l aws/Projects/S3_CLI || true'
+                echo "========================================"
+            }
+        }
 
     stages {
         stage('Checkout') {
@@ -59,7 +72,7 @@ pipeline {
                 echo "========== [STAGE: Push Docker Image] =========="
                 dir('aws/Projects/S3_CLI') {
                     echo "[STEP] Starting: Docker login"
-                    sh 'echo ${DOCKERHUB_PASS} | docker login -u ${DOCKERHUB_USER} --password-stdin'
+                    sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
                     echo "[STEP] Completed: Docker login"
                     echo "[STEP] Starting: Push Docker image with commit tag"
                     sh 'docker push ${IMAGE_TAG}'
