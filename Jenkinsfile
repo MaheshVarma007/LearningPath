@@ -18,7 +18,8 @@ pipeline {
                 sh 'docker --version || true'
                 sh 'ls -l aws/Projects/S3_CLI || true'
                 echo "========================================"
-    }
+            }
+        }
 
         stage('Checkout') {
             steps {
