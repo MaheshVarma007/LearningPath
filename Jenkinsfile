@@ -3,8 +3,8 @@ pipeline {
 
     environment {
         // Use a Jenkins usernamePassword credential with ID 'dockerhub'
-        DOCKERHUB_USER = credentials('dockerhub', variable: 'USERNAME')
-        DOCKERHUB_PASS = credentials('dockerhub', variable: 'PASSWORD')
+        DOCKERHUB_USER = credentials('dockerhub_USR')
+        DOCKERHUB_PASS = credentials('dockerhub_PSW')
         IMAGE_NAME = 's3_cli_app'
     }
     // Optional: Add a pre-check stage to verify tool versions and workspace
