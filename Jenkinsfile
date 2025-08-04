@@ -8,6 +8,7 @@ pipeline {
         IMAGE_NAME = 's3_cli_app'
     }
     // Optional: Add a pre-check stage to verify tool versions and workspace
+
     stages {
         stage('Pre-check') {
             steps {
@@ -17,10 +18,8 @@ pipeline {
                 sh 'docker --version || true'
                 sh 'ls -l aws/Projects/S3_CLI || true'
                 echo "========================================"
-            }
-        }
+    }
 
-    stages {
         stage('Checkout') {
             steps {
                 echo "========== [STAGE: Checkout] =========="
