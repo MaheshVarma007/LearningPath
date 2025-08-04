@@ -3,8 +3,7 @@ pipeline {
 
     environment {
         // Use a Jenkins usernamePassword credential with ID 'dockerhub'
-        DOCKERHUB_USER = credentials('dockerhub_USR')
-        DOCKERHUB_PASS = credentials('dockerhub_PSW')
+        DOCKERHUB = credentials('dockerhub')
         IMAGE_NAME = 's3_cli_app'
     }
     // Optional: Add a pre-check stage to verify tool versions and workspace
@@ -56,7 +55,7 @@ pipeline {
                             returnStdout: true,
                             script: "git rev-parse --short HEAD"
                         ).trim()
-                        env.IMAGE_TAG = "${DOCKERHUB_USER}/${IMAGE_NAME}:${shortCommit}"
+                        env.IMAGE_TAG = "${DOCKERHUB_USR}/${IMAGE_NAME}:${shortCommit}"
                     }
                     echo "[STEP] Completed: Get short commit hash"
                     echo "[STEP] Starting: Build Docker image"
@@ -72,16 +71,16 @@ pipeline {
                 echo "========== [STAGE: Push Docker Image] =========="
                 dir('aws/Projects/S3_CLI') {
                     echo "[STEP] Starting: Docker login"
-                    sh 'echo "$DOCKERHUB_PASS" | docker login -u "$DOCKERHUB_USER" --password-stdin'
+                    sh 'echo "$DOCKERHUB_PSW" | docker login -u "$DOCKERHUB_USR" --password-stdin'
                     echo "[STEP] Completed: Docker login"
                     echo "[STEP] Starting: Push Docker image with commit tag"
                     sh 'docker push ${IMAGE_TAG}'
                     echo "[STEP] Completed: Push Docker image with commit tag"
                     echo "[STEP] Starting: Tag Docker image as latest"
-                    sh 'docker tag ${IMAGE_TAG} ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
+                    sh 'docker tag ${IMAGE_TAG} ${DOCKERHUB_USR}/${IMAGE_NAME}:latest'
                     echo "[STEP] Completed: Tag Docker image as latest"
                     echo "[STEP] Starting: Push Docker image as latest"
-                    sh 'docker push ${DOCKERHUB_USER}/${IMAGE_NAME}:latest'
+                    sh 'docker push ${DOCKERHUB_USR}/${IMAGE_NAME}:latest'
                     echo "[STEP] Completed: Push Docker image as latest"
                 }
                 echo "========================================"
