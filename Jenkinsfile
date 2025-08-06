@@ -34,6 +34,13 @@ pipeline {
             steps {
                 echo "========== [STAGE: Install dependencies] =========="
                 dir('aws/Projects/S3_CLI') {
+
+                    echo "[STEP] Creating virtual environment if not exists"
+                    sh 'python3 -m venv venv'
+
+                    echo "[STEP] Activating virtual environment"
+                    sh '. venv/bin/activate'
+
                     echo "[STEP] Starting: Upgrade pip"
                     sh 'python3 -m pip install --upgrade pip'
                     echo "[STEP] Completed: Upgrade pip"
