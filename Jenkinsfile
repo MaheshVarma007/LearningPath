@@ -39,13 +39,11 @@ pipeline {
                     sh 'python3 -m venv venv'
 
                     echo "[STEP] Activating virtual environment"
-                    sh '. venv/bin/activate'
+                    sh '. venv/bin/activate && pip install --upgrade pip'
 
-                    echo "[STEP] Starting: Upgrade pip"
-                    sh 'python3 -m pip install --upgrade pip'
-                    echo "[STEP] Completed: Upgrade pip"
                     echo "[STEP] Starting: Install requirements"
-                    sh 'pip3 install -r requirements.txt'
+                    sh '. venv/bin/activate && pip install -r requirements.txt'
+
                     echo "[STEP] Completed: Install requirements"
                 }
                 echo "========================================"
