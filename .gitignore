@@ -10,3 +10,6 @@ __pycache__/
 config.ini
 #Ignore virtual environment directories
 venv/
+
+.terraform/
+terraform.tfstate*
