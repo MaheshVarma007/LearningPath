@@ -21,21 +21,31 @@ print(f"Zipped {src} -> {out}")
 PY
 }
 
+# Package uploader.zip if app.py exists
 echo "[1/3] Package uploader.zip"
-rm -rf /tmp/pkg/uploader && mkdir -p /tmp/pkg/uploader
-cp "${SRC_DIR}/uploader/app.py" /tmp/pkg/uploader/
-if [ -f "${SRC_DIR}/uploader/requirements.txt" ]; then
-  python -m pip install --upgrade pip >/dev/null
-  pip install -r "${SRC_DIR}/uploader/requirements.txt" -t /tmp/pkg/uploader >/dev/null
+if [ -f "${SRC_DIR}/uploader/app.py" ]; then
+  rm -rf /tmp/pkg/uploader && mkdir -p /tmp/pkg/uploader
+  cp "${SRC_DIR}/uploader/app.py" /tmp/pkg/uploader/
+  if [ -f "${SRC_DIR}/uploader/requirements.txt" ]; then
+    python -m pip install --upgrade pip >/dev/null
+    pip install -r "${SRC_DIR}/uploader/requirements.txt" -t /tmp/pkg/uploader >/dev/null
+  fi
+  zipdir /tmp/pkg/uploader "${OUT_DIR}/uploader.zip"
+else
+  echo "Warning: ${SRC_DIR}/uploader/app.py not found, skipping packaging uploader.zip."
 fi
-zipdir /tmp/pkg/uploader "${OUT_DIR}/uploader.zip"
 
+# Package resizer.zip (with Pillow wheels) if app.py exists
 echo "[2/3] Package resizer.zip (with Pillow wheels)"
-rm -rf /tmp/pkg/resizer && mkdir -p /tmp/pkg/resizer
-cp "${SRC_DIR}/resizer/app.py" /tmp/pkg/resizer/
-python -m pip install --upgrade pip >/dev/null
-pip install -r "${SRC_DIR}/resizer/requirements.txt" -t /tmp/pkg/resizer >/dev/null
-zipdir /tmp/pkg/resizer "${OUT_DIR}/resizer.zip"
+if [ -f "${SRC_DIR}/resizer/app.py" ]; then
+  rm -rf /tmp/pkg/resizer && mkdir -p /tmp/pkg/resizer
+  cp "${SRC_DIR}/resizer/app.py" /tmp/pkg/resizer/
+  python -m pip install --upgrade pip >/dev/null
+  pip install -r "${SRC_DIR}/resizer/requirements.txt" -t /tmp/pkg/resizer >/dev/null
+  zipdir /tmp/pkg/resizer "${OUT_DIR}/resizer.zip"
+else
+  echo "Warning: ${SRC_DIR}/resizer/app.py not found, skipping packaging resizer.zip."
+fi
 
 echo "[3/3] Artifacts ready:"
 ls -lh "${OUT_DIR}"
