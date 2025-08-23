@@ -159,6 +159,30 @@ EOF
                 echo "✅ Switched to local state configuration"
               else
                 echo "✅ Can access workspace 'serverless-resizer'"
+                echo "⚠️  Terraform Cloud token issue detected, switching to local state anyway..."
+                
+                # Backup and switch to local state
+                cp providers.tf providers.tf.backup
+                cat > providers.tf << 'EOF'
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
+  }
+  
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+EOF
+                echo "✅ Switched to local state configuration"
               fi
               
               echo "Running terraform init..."
