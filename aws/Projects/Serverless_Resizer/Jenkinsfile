@@ -116,6 +116,15 @@ pipeline {
                 echo "✅ Token is valid for Terraform Cloud"
               fi
               
+              echo "Debug: Explicitly exporting environment variables..."
+              export TF_TOKEN="$TF_TOKEN"
+              export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
+              export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
+              
+              echo "Debug: Verifying exports..."
+              echo "TF_TOKEN exported: ${#TF_TOKEN}"
+              echo "AWS_ACCESS_KEY_ID exported: ${#AWS_ACCESS_KEY_ID}"
+              
               echo "Running terraform init..."
               terraform init -input=false
               
