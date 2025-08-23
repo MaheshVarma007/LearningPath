@@ -80,10 +80,15 @@ pipeline {
     stage('Terraform Init/Plan') {
       steps {
         dir('aws/Projects/Serverless_Resizer/terraform') {
-          withCredentials([
-            usernamePassword(credentialsId: 'aws-creds-id', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
-            string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
-          ]) {
+          script {
+            echo "Debug: About to check credentials..."
+            echo "Looking for credential: TF_TOKEN_app_terraform_io"
+            echo "Looking for credential: aws-creds-id"
+            
+            withCredentials([
+              usernamePassword(credentialsId: 'aws-creds-id', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
+              string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
+            ]) {
             sh '''
               echo "Setting up Terraform Cloud token..."
               
@@ -164,6 +169,7 @@ EOF
               echo "Running terraform plan..."
               terraform plan -out=tfplan -input=false
             '''
+            }
           }
         }
       }
