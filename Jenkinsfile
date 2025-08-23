@@ -81,10 +81,31 @@ pipeline {
     stage('Terraform Init/Plan') {
       steps {
         dir('aws/Projects/Serverless_Resizer/terraform') {
-          sh '''
-            terraform init -input=false
-            terraform plan -out=tfplan -input=false
-          '''
+          withCredentials([
+            usernamePassword(credentialsId: 'aws-creds-id', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
+            string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
+          ]) {
+            sh '''
+              echo "Debug: Checking credentials..."
+              if [ -n "$AWS_ACCESS_KEY_ID" ]; then
+                echo "✅ AWS_ACCESS_KEY_ID is set (length: ${#AWS_ACCESS_KEY_ID})"
+              else
+                echo "❌ AWS_ACCESS_KEY_ID is not set"
+              fi
+              
+              if [ -n "$TF_TOKEN" ]; then
+                echo "✅ TF_TOKEN is set (length: ${#TF_TOKEN})"
+              else
+                echo "❌ TF_TOKEN is not set"
+              fi
+              
+              echo "Running terraform init..."
+              terraform init -input=false
+              
+              echo "Running terraform plan..."
+              terraform plan -out=tfplan -input=false
+            '''
+          }
         }
       }
     }
@@ -93,9 +114,15 @@ pipeline {
       steps {
         input message: 'Apply Terraform changes?', ok: 'Apply'
         dir('aws/Projects/Serverless_Resizer/terraform') {
-          sh '''
-            terraform apply -input=false -auto-approve tfplan
-          '''
+          withCredentials([
+            usernamePassword(credentialsId: 'aws-creds-id', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
+            string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
+          ]) {
+            sh '''
+              echo "Debug: Applying Terraform changes..."
+              terraform apply -input=false -auto-approve tfplan
+            '''
+          }
         }
       }
     }
