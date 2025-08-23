@@ -125,6 +125,42 @@ pipeline {
               echo "TF_TOKEN exported: ${#TF_TOKEN}"
               echo "AWS_ACCESS_KEY_ID exported: ${#AWS_ACCESS_KEY_ID}"
               
+              echo "Debug: Checking workspace access..."
+              workspace_response=$(curl -s -H "Authorization: Bearer $TF_TOKEN" \
+                -H "Content-Type: application/vnd.api+json" \
+                "https://app.terraform.io/api/v2/organizations/MaheshTFE/workspaces/serverless-resizer")
+              
+              if [[ $workspace_response == *"errors"* ]]; then
+                echo "❌ Cannot access workspace 'serverless-resizer':"
+                echo "$workspace_response"
+                echo "Switching to local state..."
+                
+                # Backup and switch to local state
+                cp providers.tf providers.tf.backup
+                cat > providers.tf << 'EOF'
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
+  }
+  
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+EOF
+                echo "✅ Switched to local state configuration"
+              else
+                echo "✅ Can access workspace 'serverless-resizer'"
+              fi
+              
               echo "Running terraform init..."
               terraform init -input=false
               
