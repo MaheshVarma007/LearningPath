@@ -1,12 +1,11 @@
-# Build on the AWS Lambda Python 3.12 base so wheels match Lambda
+# filepath: 
 FROM public.ecr.aws/lambda/python:3.12
 
-# Work in /workspace — we’ll mount the repo here at runtime
 WORKDIR /workspace
 
-# Copy only the build script; source is mounted at runtime
-COPY build.sh /workspace/build.sh
-RUN chmod +x /workspace/build.sh
+# Copy build.sh into a directory that won't be overwritten
+COPY build.sh /opt/build.sh
+RUN chmod +x /opt/build.sh
 
 # Run the build script by default
-ENTRYPOINT ["/bin/bash", "-lc", "/workspace/build.sh"]
+ENTRYPOINT ["/bin/bash", "-lc", "/opt/build.sh"]
