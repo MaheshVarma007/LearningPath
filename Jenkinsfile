@@ -9,9 +9,10 @@ pipeline {
     // Optional: set your default AWS region for terraform
     AWS_DEFAULT_REGION = 'us-east-1'
 
-    // If you store AWS creds in Jenkins, uncomment and set IDs:
-    // AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
-    // AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
+    // AWS and Terraform Cloud credentials
+    AWS_ACCESS_KEY_ID = credentials('aws-creds-id')
+    AWS_SECRET_ACCESS_KEY = credentials('aws-creds-id')
+    TF_TOKEN = credentials('TF_TOKEN_app_terraform_io')
 
     BUILDER_IMAGE = 'lambda-zip-builder:latest'
   }
@@ -25,11 +26,13 @@ pipeline {
 
     stage('Sanity & Tools') {
       steps {
+         dir('aws/Projects/Serverless_Resizer'){
         sh '''
           echo "Jenkins workspace: $(pwd)"
           docker version >/dev/null 2>&1 || { echo "Docker not available"; exit 1; }
           terraform -version || { echo "Terraform not available"; exit 1; }
         '''
+      }
       }
     }
 
@@ -79,7 +82,87 @@ pipeline {
       steps {
         dir('aws/Projects/Serverless_Resizer/terraform') {
           sh '''
+            echo "Debug: Checking environment variables..."
+            echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:0:10}..."
+            echo "TF_TOKEN: ${TF_TOKEN:0:10}..."
+            
+            echo "Setting up Terraform Cloud token..."
+            
+            # Check if TF_TOKEN is available from environment
+            if [ -n "$TF_TOKEN" ]; then
+              echo "✅ TF_TOKEN found from environment"
+              echo "Token length: ${#TF_TOKEN}"
+              
+              # Test the token with Terraform Cloud API
+              echo "Testing Terraform Cloud connection..."
+              response=$(curl -s -H "Authorization: Bearer $TF_TOKEN" \
+                -H "Content-Type: application/vnd.api+json" \
+                "https://app.terraform.io/api/v2/organizations/MaheshTFE")
+              
+              if [[ $response == *"errors"* ]]; then
+                echo "❌ Token validation failed, switching to local state..."
+                # Backup current providers.tf
+                cp providers.tf providers.tf.backup
+                
+                # Create local backend configuration
+                cat > providers.tf << 'EOF'
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
+  }
+  
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+EOF
+                
+                echo "Switched to local state configuration"
+              else
+                echo "✅ Token is valid, using Terraform Cloud"
+              fi
+            else
+              echo "❌ TF_TOKEN not found, switching to local state..."
+              
+              # Backup current providers.tf
+              cp providers.tf providers.tf.backup
+              
+              # Create local backend configuration
+              cat > providers.tf << 'EOF'
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
+  }
+  
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
+
+provider "aws" {
+  region = var.aws_region
+}
+EOF
+              
+              echo "Switched to local state configuration"
+            fi
+            
+            echo "Running terraform init..."
             terraform init -input=false
+            
+            echo "Running terraform plan..."
             terraform plan -out=tfplan -input=false
           '''
         }
@@ -90,7 +173,21 @@ pipeline {
       steps {
         input message: 'Apply Terraform changes?', ok: 'Apply'
         dir('aws/Projects/Serverless_Resizer/terraform') {
-          sh 'terraform apply -input=false -auto-approve tfplan'
+          sh '''
+            # Check if we're using local state or Terraform Cloud
+            if [ -f providers.tf.backup ]; then
+              echo "Using local state configuration"
+            else
+              echo "Using Terraform Cloud configuration"
+              if [ -n "$TF_TOKEN" ]; then
+                echo "TF_TOKEN is available for Terraform Cloud"
+              else
+                echo "No TF_TOKEN available"
+              fi
+            fi
+            
+            terraform apply -input=false -auto-approve tfplan
+          '''
         }
       }
     }
