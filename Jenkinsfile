@@ -1,104 +1,103 @@
 pipeline {
-    agent any
+  agent any
 
-    environment {
-        // Use a Jenkins usernamePassword credential with ID 'dockerhub'
-        DOCKERHUB = credentials('dockerhub')
-        IMAGE_NAME = 's3_cli_app'
-    }
-    // Optional: Add a pre-check stage to verify tool versions and workspace
+  options {
+    timestamps()
+    ansiColor('xterm')
+  }
 
-    stages {
-        stage('Pre-check') {
-            steps {
-                echo "========== [STAGE: Pre-check] =========="
-                sh 'python3 --version || true'
-                sh 'pip3 --version || true'
-                sh 'docker --version || true'
-                sh 'ls -l aws/Projects/S3_CLI || true'
-                echo "========================================"
-            }
-        }
+  environment {
+    // Optional: set your default AWS region for terraform
+    AWS_DEFAULT_REGION = 'us-east-1'
 
-        stage('Checkout') {
-            steps {
-                echo "========== [STAGE: Checkout] =========="
-                echo "[STEP] Starting: Checkout SCM"
-                checkout scm
-                echo "[STEP] Completed: Checkout SCM"
-                echo "========================================"
-            }
-        }
+    // If you store AWS creds in Jenkins, uncomment and set IDs:
+    // AWS_ACCESS_KEY_ID     = credentials('aws-access-key-id')
+    // AWS_SECRET_ACCESS_KEY = credentials('aws-secret-access-key')
 
-        stage('Install dependencies') {
-            steps {
-                echo "========== [STAGE: Install dependencies] =========="
-                dir('aws/Projects/S3_CLI') {
+    BUILDER_IMAGE = 'lambda-zip-builder:latest'
+  }
 
-                    echo "[STEP] Creating virtual environment if not exists"
-                    sh 'python3 -m venv venv'
-
-                    echo "[STEP] Activating virtual environment"
-                    sh '. venv/bin/activate && pip install --upgrade pip'
-
-                    echo "[STEP] Starting: Install requirements"
-                    sh '. venv/bin/activate && pip install -r requirements.txt'
-
-                    echo "[STEP] Completed: Install requirements"
-                }
-                echo "========================================"
-            }
-        }
-
-        stage('Build Docker Image') {
-            steps {
-                echo "========== [STAGE: Build Docker Image] =========="
-                dir('aws/Projects/S3_CLI') {
-                    echo "[STEP] Starting: Get short commit hash"
-                    script {
-                        def shortCommit = sh(
-                            returnStdout: true,
-                            script: "git rev-parse --short HEAD"
-                        ).trim()
-                        env.IMAGE_TAG = "${DOCKERHUB_USR}/${IMAGE_NAME}:${shortCommit}"
-                    }
-                    echo "[STEP] Completed: Get short commit hash"
-                    echo "[STEP] Starting: Build Docker image"
-                    sh 'docker build -t ${IMAGE_TAG} .'
-                    echo "[STEP] Completed: Build Docker image"
-                }
-                echo "========================================"
-            }
-        }
-
-        stage('Push Docker Image') {
-            steps {
-                echo "========== [STAGE: Push Docker Image] =========="
-                dir('aws/Projects/S3_CLI') {
-                    echo "[STEP] Starting: Docker login"
-                    sh 'echo "$DOCKERHUB_PSW" | docker login -u "$DOCKERHUB_USR" --password-stdin'
-                    echo "[STEP] Completed: Docker login"
-                    echo "[STEP] Starting: Push Docker image with commit tag"
-                    sh 'docker push ${IMAGE_TAG}'
-                    echo "[STEP] Completed: Push Docker image with commit tag"
-                    echo "[STEP] Starting: Tag Docker image as latest"
-                    sh 'docker tag ${IMAGE_TAG} ${DOCKERHUB_USR}/${IMAGE_NAME}:latest'
-                    echo "[STEP] Completed: Tag Docker image as latest"
-                    echo "[STEP] Starting: Push Docker image as latest"
-                    sh 'docker push ${DOCKERHUB_USR}/${IMAGE_NAME}:latest'
-                    echo "[STEP] Completed: Push Docker image as latest"
-                }
-                echo "========================================"
-            }
-        }
+  stages {
+    stage('Checkout') {
+      steps {
+        checkout scm
+      }
     }
 
-    post {
-        success {
-            echo "========== [POST] Pipeline completed successfully. Docker image: ${IMAGE_TAG} =========="
-        }
-        failure {
-            echo "========== [POST] Pipeline failed. Check logs for details. =========="
-        }
+    stage('Sanity & Tools') {
+      steps {
+        sh '''
+          echo "Jenkins workspace: $(pwd)"
+          docker version >/dev/null 2>&1 || { echo "Docker not available"; exit 1; }
+          terraform -version || { echo "Terraform not available"; exit 1; }
+        '''
+      }
     }
+
+    stage('(Optional) Unit Tests') {
+      when { expression { return fileExists('requirements-test.txt') || fileExists('pytest.ini') || fileExists('tests') } }
+      steps {
+        sh '''
+          python3 -m pip install --upgrade pip
+          # install whatever you use for tests; customize as needed
+          if [ -f requirements-test.txt ]; then pip install -r requirements-test.txt; fi
+          # Example (uncomment if you have tests):
+          # pip install pytest moto
+          # pytest -q
+          echo "Skipping actual tests placeholder. Add pytest here."
+        '''
+      }
+    }
+
+    stage('Build builder image') {
+      steps {
+        sh 'docker build -f Dockerfile.build -t ${BUILDER_IMAGE} .'
+      }
+    }
+
+    stage('Package Lambdas (ZIP)') {
+      steps {
+        sh 'docker run --rm -v "$PWD":/workspace ${BUILDER_IMAGE}'
+      }
+    }
+
+    stage('Archive Artifacts') {
+      steps {
+        sh 'ls -lh build || true'
+        archiveArtifacts artifacts: 'build/*.zip', fingerprint: true, onlyIfSuccessful: true
+      }
+    }
+
+    stage('Terraform Init/Plan') {
+      steps {
+        dir('infra') {
+          sh '''
+            terraform init -input=false
+            terraform plan -out=tfplan -input=false
+          '''
+        }
+      }
+    }
+
+    stage('Terraform Apply') {
+      steps {
+        input message: 'Apply Terraform changes?', ok: 'Apply'
+        dir('infra') {
+          sh 'terraform apply -input=false -auto-approve tfplan'
+        }
+      }
+    }
+  }
+
+  post {
+    success {
+      echo '✅ CI/CD finished successfully. Lambdas packaged and infra applied.'
+    }
+    failure {
+      echo '❌ Pipeline failed. Check the stage logs above.'
+    }
+    always {
+      cleanWs()
+    }
+  }
 }
