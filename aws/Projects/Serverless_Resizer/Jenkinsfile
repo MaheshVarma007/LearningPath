@@ -86,7 +86,6 @@ pipeline {
             echo "Looking for credential: aws-creds-id"
             
             withCredentials([
-              usernamePassword(credentialsId: 'aws-creds-id', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
               string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
             ]) {
             sh '''
@@ -180,7 +179,6 @@ EOF
         input message: 'Apply Terraform changes?', ok: 'Apply'
         dir('aws/Projects/Serverless_Resizer/terraform') {
           withCredentials([
-            usernamePassword(credentialsId: 'aws-creds-id', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
             string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
           ]) {
             sh '''
