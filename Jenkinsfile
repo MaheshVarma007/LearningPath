@@ -37,6 +37,7 @@ pipeline {
     stage('(Optional) Unit Tests') {
       when { expression { return fileExists('requirements-test.txt') || fileExists('pytest.ini') || fileExists('tests') } }
       steps {
+        dir('aws/Projects/Serverless_Resizer'){
         sh '''
           python3 -m pip install --upgrade pip
           # install whatever you use for tests; customize as needed
@@ -47,30 +48,37 @@ pipeline {
           echo "Skipping actual tests placeholder. Add pytest here."
         '''
       }
+      }
     }
 
     stage('Build builder image') {
       steps {
+        dir('aws/Projects/Serverless_Resizer'){
         sh 'docker build -f Dockerfile.build -t ${BUILDER_IMAGE} .'
+      }
       }
     }
 
     stage('Package Lambdas (ZIP)') {
       steps {
+        dir('aws/Projects/Serverless_Resizer'){
         sh 'docker run --rm -v "$PWD":/workspace ${BUILDER_IMAGE}'
+      }
       }
     }
 
     stage('Archive Artifacts') {
       steps {
+        dir('aws/Projects/Serverless_Resizer'){
         sh 'ls -lh build || true'
         archiveArtifacts artifacts: 'build/*.zip', fingerprint: true, onlyIfSuccessful: true
+      }
       }
     }
 
     stage('Terraform Init/Plan') {
       steps {
-        dir('infra') {
+        dir('aws/Projects/Serverless_Resizer/terraform') {
           sh '''
             terraform init -input=false
             terraform plan -out=tfplan -input=false
@@ -82,7 +90,7 @@ pipeline {
     stage('Terraform Apply') {
       steps {
         input message: 'Apply Terraform changes?', ok: 'Apply'
-        dir('infra') {
+        dir('aws/Projects/Serverless_Resizer/terraform') {
           sh 'terraform apply -input=false -auto-approve tfplan'
         }
       }
