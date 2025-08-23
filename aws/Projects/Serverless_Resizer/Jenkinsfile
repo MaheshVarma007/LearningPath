@@ -86,7 +86,19 @@ pipeline {
             string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
           ]) {
             sh '''
+              echo "Debug: Checking environment variables..."
+              echo "AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID:0:10}..."
+              echo "TF_TOKEN: ${TF_TOKEN:0:10}..."
+              
+              echo "Debug: Testing Terraform Cloud connection..."
+              curl -s -H "Authorization: Bearer $TF_TOKEN" \
+                -H "Content-Type: application/vnd.api+json" \
+                "https://app.terraform.io/api/v2/organizations/MaheshTFE" | head -c 200
+              echo ""
+              
+              echo "Debug: Running terraform init..."
               terraform init -input=false
+              echo "Debug: Running terraform plan..."
               terraform plan -out=tfplan -input=false
             '''
           }
