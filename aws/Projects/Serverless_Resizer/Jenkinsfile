@@ -93,8 +93,7 @@ pipeline {
               echo '}' >> .terraformrc
               
               echo "Created .terraformrc file"
-              echo "Running terraform init..."
-              terraform init -input=false
+              
               
               echo "Running terraform plan..."
               terraform plan -out=tfplan -input=false
