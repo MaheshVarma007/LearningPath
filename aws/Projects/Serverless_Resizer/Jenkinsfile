@@ -92,7 +92,7 @@ pipeline {
               credentials "app.terraform.io" {
                 token = "$TF_TOKEN"
               }
-              EOF
+              
               
 
               echo "Running terraform init..."
