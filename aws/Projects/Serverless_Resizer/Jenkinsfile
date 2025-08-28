@@ -87,12 +87,10 @@ pipeline {
              sh '''
               echo "Setting up Terraform Cloud authentication..."
               
-              # Create .terraformrc file with token
-              cat > .terraformrc << 'EOF'
-              credentials "app.terraform.io" {
-                token = "'"$TF_TOKEN"'"
-              }
-              EOF
+              # Create .terraformrc file with token using echo
+              echo 'credentials "app.terraform.io" {' > .terraformrc
+              echo '  token = "'"$TF_TOKEN"'"' >> .terraformrc
+              echo '}' >> .terraformrc
               
               echo "Created .terraformrc file"
               echo "Running terraform init..."
