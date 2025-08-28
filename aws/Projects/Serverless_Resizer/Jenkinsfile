@@ -8,7 +8,6 @@ pipeline {
   environment {
     // Optional: set your default AWS region for terraform
     AWS_DEFAULT_REGION = 'us-east-1'
-
     // AWS and Terraform Cloud credentials
     AWS_ACCESS_KEY_ID = credentials('aws-creds-id-username')
     AWS_SECRET_ACCESS_KEY = credentials('aws-creds-id-password')
