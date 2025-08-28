@@ -85,7 +85,8 @@ pipeline {
             string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
           ]) {
             sh '''
-              
+              echo "Setting up Terraform Cloud authentication..."
+              export TF_TOKEN="$TF_TOKEN"
               
               echo "Running terraform init..."
               terraform init -input=false
