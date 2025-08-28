@@ -84,17 +84,17 @@ pipeline {
             usernamePassword(credentialsId: 'aws-creds-id', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
             string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
           ]) {
-            sh '''
+             sh '''
               echo "Setting up Terraform Cloud authentication..."
-          
-              # Create .terraformrc file
-              cat > .terraformrc << EOF
+              
+              # Create .terraformrc file with token
+              cat > .terraformrc << 'EOF'
               credentials "app.terraform.io" {
-                token = "$TF_TOKEN"
+                token = "'"$TF_TOKEN"'"
               }
+              EOF
               
-              
-
+              echo "Created .terraformrc file"
               echo "Running terraform init..."
               terraform init -input=false
               
