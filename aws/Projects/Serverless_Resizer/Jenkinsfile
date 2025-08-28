@@ -86,104 +86,7 @@ pipeline {
             string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
           ]) {
             sh '''
-              echo "Debug: Checking credentials..."
-              if [ -n "$AWS_ACCESS_KEY_ID" ]; then
-                echo "✅ AWS_ACCESS_KEY_ID is set (length: ${#AWS_ACCESS_KEY_ID})"
-              else
-                echo "❌ AWS_ACCESS_KEY_ID is not set"
-              fi
               
-              if [ -n "$TF_TOKEN" ]; then
-                echo "✅ TF_TOKEN is set (length: ${#TF_TOKEN})"
-              else
-                echo "❌ TF_TOKEN is not set"
-              fi
-              
-              echo "Debug: Checking Terraform configuration..."
-              echo "Current directory: $(pwd)"
-              echo "Terraform files:"
-              ls -la *.tf
-              
-              echo "Debug: Testing Terraform Cloud connection..."
-              response=$(curl -s -H "Authorization: Bearer $TF_TOKEN" \
-                -H "Content-Type: application/vnd.api+json" \
-                "https://app.terraform.io/api/v2/organizations/MaheshTFE")
-              
-              if [[ $response == *"errors"* ]]; then
-                echo "❌ Token validation failed:"
-                echo "$response"
-              else
-                echo "✅ Token is valid for Terraform Cloud"
-              fi
-              
-              echo "Debug: Explicitly exporting environment variables..."
-              export TF_TOKEN="$TF_TOKEN"
-              export AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID"
-              export AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY"
-              
-              echo "Debug: Verifying exports..."
-              echo "TF_TOKEN exported: ${#TF_TOKEN}"
-              echo "AWS_ACCESS_KEY_ID exported: ${#AWS_ACCESS_KEY_ID}"
-              
-              echo "Debug: Checking workspace access..."
-              workspace_response=$(curl -s -H "Authorization: Bearer $TF_TOKEN" \
-                -H "Content-Type: application/vnd.api+json" \
-                "https://app.terraform.io/api/v2/organizations/MaheshTFE/workspaces/serverless-resizer")
-              
-              if [[ $workspace_response == *"errors"* ]]; then
-                echo "❌ Cannot access workspace 'serverless-resizer':"
-                echo "$workspace_response"
-                echo "Switching to local state..."
-                
-                # Backup and switch to local state
-                cp providers.tf providers.tf.backup
-                cat > providers.tf << 'EOF'
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 5.0"
-    }
-  }
-  
-  backend "local" {
-    path = "terraform.tfstate"
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-}
-EOF
-                echo "✅ Switched to local state configuration"
-              else
-                echo "✅ Can access workspace 'serverless-resizer'"
-                echo "⚠️  Terraform Cloud token issue detected, switching to local state anyway..."
-                
-                # Backup and switch to local state
-                cp providers.tf providers.tf.backup
-                cat > providers.tf << 'EOF'
-terraform {
-  required_version = ">= 1.5.0"
-  required_providers {
-    aws = {
-      source  = "hashicorp/aws"
-      version = ">= 5.0"
-    }
-  }
-  
-  backend "local" {
-    path = "terraform.tfstate"
-  }
-}
-
-provider "aws" {
-  region = var.aws_region
-}
-EOF
-                echo "✅ Switched to local state configuration"
-              fi
               
               echo "Running terraform init..."
               terraform init -input=false
@@ -212,7 +115,6 @@ EOF
         }
       }
     }
-  }
 
   post {
     success {
