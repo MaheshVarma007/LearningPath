@@ -8,6 +8,7 @@ pipeline {
   environment {
     // Optional: set your default AWS region for terraform
     AWS_DEFAULT_REGION = 'us-east-1'
+
     // AWS and Terraform Cloud credentials
     AWS_ACCESS_KEY_ID = credentials('aws-creds-id-username')
     AWS_SECRET_ACCESS_KEY = credentials('aws-creds-id-password')
@@ -84,7 +85,7 @@ pipeline {
             usernamePassword(credentialsId: 'aws-creds-id', usernameVariable: 'AWS_ACCESS_KEY_ID', passwordVariable: 'AWS_SECRET_ACCESS_KEY'),
             string(credentialsId: 'TF_TOKEN_app_terraform_io', variable: 'TF_TOKEN')
           ]) {
-             sh '''
+            sh '''
               echo "Debug: Checking credentials..."
               if [ -n "$AWS_ACCESS_KEY_ID" ]; then
                 echo "✅ AWS_ACCESS_KEY_ID is set (length: ${#AWS_ACCESS_KEY_ID})"
@@ -137,50 +138,50 @@ pipeline {
                 # Backup and switch to local state
                 cp providers.tf providers.tf.backup
                 cat > providers.tf << 'EOF'
-                terraform {
-                  required_version = ">= 1.5.0"
-                  required_providers {
-                    aws = {
-                      source  = "hashicorp/aws"
-                      version = ">= 5.0"
-                    }
-                  }
-                  
-                  backend "local" {
-                    path = "terraform.tfstate"
-                  }
-                }
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
+  }
+  
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
 
-                provider "aws" {
-                  region = var.aws_region
-                }
-                EOF
-                                echo "✅ Switched to local state configuration"
-                              else
-                                echo "✅ Can access workspace 'serverless-resizer'"
-                                echo "⚠️  Terraform Cloud token issue detected, switching to local state anyway..."
-                                
-                                # Backup and switch to local state
-                                cp providers.tf providers.tf.backup
-                                cat > providers.tf << 'EOF'
-                terraform {
-                  required_version = ">= 1.5.0"
-                  required_providers {
-                    aws = {
-                      source  = "hashicorp/aws"
-                      version = ">= 5.0"
-                    }
-                  }
-                  
-                  backend "local" {
-                    path = "terraform.tfstate"
-                  }
-                }
+provider "aws" {
+  region = var.aws_region
+}
+EOF
+                echo "✅ Switched to local state configuration"
+              else
+                echo "✅ Can access workspace 'serverless-resizer'"
+                echo "⚠️  Terraform Cloud token issue detected, switching to local state anyway..."
+                
+                # Backup and switch to local state
+                cp providers.tf providers.tf.backup
+                cat > providers.tf << 'EOF'
+terraform {
+  required_version = ">= 1.5.0"
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = ">= 5.0"
+    }
+  }
+  
+  backend "local" {
+    path = "terraform.tfstate"
+  }
+}
 
-                provider "aws" {
-                  region = var.aws_region
-                }
-                EOF
+provider "aws" {
+  region = var.aws_region
+}
+EOF
                 echo "✅ Switched to local state configuration"
               fi
               
