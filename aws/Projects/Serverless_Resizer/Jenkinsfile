@@ -86,8 +86,16 @@ pipeline {
           ]) {
             sh '''
               echo "Logging into Terraform Cloud with token..."
-              echo "${TF_TOKEN}" | terraform login
+              echo "${TF_TOKEN}" 
+              export TF_TOKEN="${TF_TOKEN}"
               
+              terraform login
+              
+              yes
+
+              
+              TF_TOKEN
+
               echo "Running terraform init..."
               terraform init -input=false
               
