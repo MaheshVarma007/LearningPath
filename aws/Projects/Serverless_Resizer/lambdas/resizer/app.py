@@ -5,7 +5,7 @@ log = logging.getLogger()
 log.setLevel(logging.INFO)
 
 s3 = boto3.client("s3")
-BUCKET       = os.environ["BUCKET", "img-resizer-dev-ee03ffe6"]
+BUCKET       = os.environ.get("BUCKET", "img-resizer-dev-ee03ffe6")
 THUMB_WIDTH  = int(os.environ.get("THUMB_WIDTH", "256"))
 SRC_PREFIX   = os.environ.get("SRC_PREFIX", "originals/")
 DEST_PREFIX  = os.environ.get("DEST_PREFIX", "thumbnails/")

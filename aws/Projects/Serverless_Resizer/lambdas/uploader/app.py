@@ -1,7 +1,7 @@
 import json, os, time, uuid, boto3
 
 s3 = boto3.client("s3")
-BUCKET = os.environ["BUCKET","img-resizer-dev-ee03ffe6"]
+BUCKET = os.environ.get("BUCKET", "img-resizer-dev-ee03ffe6")
 
 def _response(status, body):
     return {
